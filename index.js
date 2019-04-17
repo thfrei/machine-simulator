@@ -27,10 +27,11 @@ function post_initialize() {
     });
 
     let state = 0;
+    let amount = 0;
     let producedProducts = 0;
     namespace.addVariable({
       componentOf: device,
-      nodeId: "s=stateVeri", // some opaque NodeId in namespace 4
+      nodeId: "s=state", // some opaque NodeId in namespace 4
       browseName: "State",
       dataType: "Int16",
       value: {
@@ -41,8 +42,24 @@ function post_initialize() {
           state = parseInt(variant.value);
           setTimeout(() => {
             state = 0;
-            producedProducts = producedProducts + 1;
+            producedProducts = producedProducts + amount;
+            amount = 0;
           }, 3000);
+          return opcua.StatusCodes.Good;
+        }
+      }
+    });
+    namespace.addVariable({
+      componentOf: device,
+      nodeId: "s=amount", // some opaque NodeId in namespace 4
+      browseName: "Amount",
+      dataType: "Int16",
+      value: {
+        get: function () {
+          return new opcua.Variant({dataType: opcua.DataType.Int16, value: amount});
+        },
+        set: function (variant) {
+          amount = parseInt(variant.value);
           return opcua.StatusCodes.Good;
         }
       }
