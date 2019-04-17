@@ -1,10 +1,138 @@
-var express = require('express');
-var app = express();
+/*global require,setInterval,console */
+const opcua = require("node-opcua");
 
-app.get('/', function (req, res) {
-  res.send('Hello World!');
+// Let's create an instance of OPCUAServer
+const server = new opcua.OPCUAServer({
+  port: 4334, // the port of the listening socket of the server
+  resourcePath: "UA/MyLittleServer", // this path will be added to the endpoint resource name
+  buildInfo: {
+    productName: "MySampleServer1",
+    buildNumber: "7658",
+    buildDate: new Date(2014, 5, 2)
+  }
 });
 
-app.listen(3000, function () {
-  console.log('Example app listening on port 3000!');
-});
+function post_initialize() {
+  console.log("initialized");
+
+  function construct_my_address_space(server) {
+
+    const addressSpace = server.engine.addressSpace;
+    const namespace = addressSpace.getOwnNamespace();
+
+    // declare a new object
+    const device = namespace.addObject({
+      organizedBy: addressSpace.rootFolder.objects,
+      browseName: "MyDevice"
+    });
+
+    let state = 0;
+    let producedProducts = 0;
+    namespace.addVariable({
+      componentOf: device,
+      nodeId: "s=stateVeri", // some opaque NodeId in namespace 4
+      browseName: "State",
+      dataType: "Int16",
+      value: {
+        get: function () {
+          return new opcua.Variant({dataType: opcua.DataType.Int16, value: state});
+        },
+        set: function (variant) {
+          state = parseInt(variant.value);
+          setTimeout(() => {
+            state = 0;
+            producedProducts = producedProducts + 1;
+          }, 3000);
+          return opcua.StatusCodes.Good;
+        }
+      }
+    });
+
+    namespace.addVariable({
+      componentOf: device,
+      nodeId: "s=producedProducts", // some opaque NodeId in namespace 4
+      browseName: "ProducedProducts",
+      dataType: "Int16",
+      value: {
+        get: function () {
+          return new opcua.Variant({dataType: opcua.DataType.Int16, value: producedProducts});
+        },
+        set: function (variant) {
+          producedProducts = parseInt(variant.value);
+          return opcua.StatusCodes.Good;
+        }
+      }
+    });
+
+    // add some variables
+    // add a variable named MyVariable1 to the newly created folder "MyDevice"
+    let variable1 = 1;
+
+    // emulate variable1 changing every 500 ms
+    setInterval(function () {
+      variable1 += 1;
+    }, 500);
+
+    namespace.addVariable({
+      componentOf: device,
+      browseName: "_MyVariable1",
+      dataType: "Double",
+      value: {
+        get: function () {
+          return new opcua.Variant({dataType: opcua.DataType.Double, value: variable1});
+        }
+      }
+    });
+
+    // add a variable named MyVariable2 to the newly created folder "MyDevice"
+    let variable2 = 10.0;
+    namespace.addVariable({
+      componentOf: device,
+      nodeId: "ns=1;b=1020FFAA", // some opaque NodeId in namespace 4
+      browseName: "_MyVariable2",
+      dataType: "Double",
+      value: {
+        get: function () {
+          return new opcua.Variant({dataType: opcua.DataType.Double, value: variable2});
+        },
+        set: function (variant) {
+          variable2 = parseFloat(variant.value);
+          return opcua.StatusCodes.Good;
+        }
+      }
+    });
+    const os = require("os");
+
+    /**
+     * returns the percentage of free memory on the running machine
+     * @return {double}
+     */
+    function available_memory() {
+      // var value = process.memoryUsage().heapUsed / 1000000;
+      const percentageMemUsed = os.freemem() / os.totalmem() * 100.0;
+      return percentageMemUsed;
+    }
+
+    namespace.addVariable({
+      componentOf: device,
+      nodeId: "s=free_memory", // a string nodeID
+      browseName: "_FreeMemory",
+      dataType: "Double",
+      value: {
+        get: function () {
+          return new opcua.Variant({dataType: opcua.DataType.Double, value: available_memory()});
+        }
+      }
+    });
+  }
+
+  construct_my_address_space(server);
+  server.start(function () {
+    console.log("Server is now listening ... ( press CTRL+C to stop)");
+    console.log("port ", server.endpoints[0].port);
+    const endpointUrl = server.endpoints[0].endpointDescriptions()[0].endpointUrl;
+    console.log(" the primary server endpoint url is ", endpointUrl);
+  });
+}
+
+server.initialize(post_initialize);
