@@ -23,3 +23,18 @@ cd machine-simulator
 npm install
 npm start
 ```
+
+Connect with UAExpert
+---------------------
+
+`opc.tcp://localhost:4334`
+
+Usage
+---------
+
+* Set Amount = 4
+* Set State = 1 (PRODUCING)
+* Wait
+* State will change to 0, indicating NOT PRODUCING
+* Amount will change to 0
+* Produced Amount will change to 4
