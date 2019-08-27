@@ -4,7 +4,7 @@ const opcua = require("node-opcua");
 // Let's create an instance of OPCUAServer
 const server = new opcua.OPCUAServer({
   port: 4334, // the port of the listening socket of the server
-  resourcePath: "UA/MyLittleServer", // this path will be added to the endpoint resource name
+  resourcePath: "/UA/MyLittleServer", // this path will be added to the endpoint resource name
   buildInfo: {
     productName: "MySampleServer1",
     buildNumber: "7658",
