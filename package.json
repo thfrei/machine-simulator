@@ -11,6 +11,6 @@
   "license": "ISC",
   "dependencies": {
     "express": "4.17.1",
-    "node-opcua": "2.1.5"
+    "node-opcua": "2.74.0"
   }
 }
